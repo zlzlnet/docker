@@ -5,12 +5,12 @@ import (
 )
 
 // GetMounts retrieves a list of mounts for the current running process.
-func GetMounts() ([]*MountInfo, error) {
+func GetMounts() ([]*Info, error) {
 	return parseMountTable()
 }
 
-// Mounted looks at /proc/self/mountinfo to determine of the specified
-// mountpoint has been mounted
+// Mounted determines if a specified mountpoint has been mounted.
+// On Linux it looks at /proc/self/mountinfo and on Solaris at mnttab.
 func Mounted(mountpoint string) (bool, error) {
 	entries, err := parseMountTable()
 	if err != nil {

@@ -1,29 +1,36 @@
-// +build experimental
-
 package main
 
 import (
-	"os/exec"
 	"strings"
 
+	"github.com/docker/docker/pkg/integration/checker"
 	"github.com/go-check/check"
 )
 
-func (s *DockerSuite) TestExperimentalVersion(c *check.C) {
-	versionCmd := exec.Command(dockerBinary, "version")
-	out, _, err := runCommandWithOutput(versionCmd)
-	if err != nil {
-		c.Fatalf("failed to execute docker version: %s, %v", out, err)
-	}
+func (s *DockerSuite) TestExperimentalVersionTrue(c *check.C) {
+	testRequires(c, ExperimentalDaemon)
 
+	out, _ := dockerCmd(c, "version")
 	for _, line := range strings.Split(out, "\n") {
-		if strings.HasPrefix(line, "Experimental (client):") || strings.HasPrefix(line, "Experimental (server):") {
-			c.Assert(line, check.Matches, "*true")
+		if strings.HasPrefix(strings.TrimSpace(line), "Experimental:") {
+			c.Assert(line, checker.Matches, "*true")
+			return
 		}
 	}
 
-	versionCmd = exec.Command(dockerBinary, "-v")
-	if out, _, err = runCommandWithOutput(versionCmd); err != nil || !strings.Contains(out, ", experimental") {
-		c.Fatalf("docker version did not contain experimental: %s, %v", out, err)
+	c.Fatal(`"Experimental" not found in version output`)
+}
+
+func (s *DockerSuite) TestExperimentalVersionFalse(c *check.C) {
+	testRequires(c, NotExperimentalDaemon)
+
+	out, _ := dockerCmd(c, "version")
+	for _, line := range strings.Split(out, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "Experimental:") {
+			c.Assert(line, checker.Matches, "*false")
+			return
+		}
 	}
+
+	c.Fatal(`"Experimental" not found in version output`)
 }

@@ -59,8 +59,8 @@ bundle_ubuntu() {
 	mkdir -p "$DIR/etc/fish/completions"
 	cp contrib/completion/fish/docker.fish "$DIR/etc/fish/completions/"
 
-	# Include contributed man pages
-	man/md2man-all.sh -q
+	# Include man pages
+	make manpages
 	manRoot="$DIR/usr/share/man"
 	mkdir -p "$manRoot"
 	for manDir in man/man?; do
@@ -149,6 +149,7 @@ EOF
 			--deb-recommends git \
 			--deb-recommends xz-utils \
 			--deb-recommends 'cgroupfs-mount | cgroup-lite' \
+			--deb-suggests apparmor \
 			--description "$PACKAGE_DESCRIPTION" \
 			--maintainer "$PACKAGE_MAINTAINER" \
 			--conflicts docker \

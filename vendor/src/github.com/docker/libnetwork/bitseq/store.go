@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/docker/libnetwork/datastore"
 	"github.com/docker/libnetwork/types"
 )
@@ -25,17 +24,16 @@ func (h *Handle) KeyPrefix() []string {
 
 // Value marshals the data to be stored in the KV store
 func (h *Handle) Value() []byte {
-	b, err := h.ToByteArray()
+	b, err := json.Marshal(h)
 	if err != nil {
-		log.Warnf("Failed to serialize Handle: %v", err)
-		b = []byte{}
+		return nil
 	}
-	jv, err := json.Marshal(b)
-	if err != nil {
-		log.Warnf("Failed to json encode bitseq handler byte array: %v", err)
-		return []byte{}
-	}
-	return jv
+	return b
+}
+
+// SetValue unmarshals the data from the KV store
+func (h *Handle) SetValue(value []byte) error {
+	return json.Unmarshal(value, h)
 }
 
 // Index returns the latest DB Index as seen by this object
@@ -49,41 +47,62 @@ func (h *Handle) Index() uint64 {
 func (h *Handle) SetIndex(index uint64) {
 	h.Lock()
 	h.dbIndex = index
+	h.dbExists = true
 	h.Unlock()
 }
 
-func (h *Handle) watchForChanges() error {
+// Exists method is true if this object has been stored in the DB.
+func (h *Handle) Exists() bool {
 	h.Lock()
-	store := h.store
-	h.Unlock()
+	defer h.Unlock()
+	return h.dbExists
+}
 
-	if store == nil {
+// New method returns a handle based on the receiver handle
+func (h *Handle) New() datastore.KVObject {
+	h.Lock()
+	defer h.Unlock()
+
+	return &Handle{
+		app:   h.app,
+		store: h.store,
+	}
+}
+
+// CopyTo deep copies the handle into the passed destination object
+func (h *Handle) CopyTo(o datastore.KVObject) error {
+	h.Lock()
+	defer h.Unlock()
+
+	dstH := o.(*Handle)
+	if h == dstH {
 		return nil
 	}
+	dstH.Lock()
+	dstH.bits = h.bits
+	dstH.unselected = h.unselected
+	dstH.head = h.head.getCopy()
+	dstH.app = h.app
+	dstH.id = h.id
+	dstH.dbIndex = h.dbIndex
+	dstH.dbExists = h.dbExists
+	dstH.store = h.store
+	dstH.Unlock()
 
-	kvpChan, err := store.KVStore().Watch(datastore.Key(h.Key()...), nil)
-	if err != nil {
-		return err
-	}
-	go func() {
-		for {
-			select {
-			case kvPair := <-kvpChan:
-				// Only process remote update
-				if kvPair != nil && (kvPair.LastIndex != h.getDBIndex()) {
-					err := h.fromDsValue(kvPair.Value)
-					if err != nil {
-						log.Warnf("Failed to reconstruct bitseq handle from ds watch: %s", err.Error())
-					} else {
-						h.Lock()
-						h.dbIndex = kvPair.LastIndex
-						h.Unlock()
-					}
-				}
-			}
-		}
-	}()
 	return nil
+}
+
+// Skip provides a way for a KV Object to avoid persisting it in the KV Store
+func (h *Handle) Skip() bool {
+	return false
+}
+
+// DataScope method returns the storage scope of the datastore
+func (h *Handle) DataScope() string {
+	h.Lock()
+	defer h.Unlock()
+
+	return h.store.Scope()
 }
 
 func (h *Handle) fromDsValue(value []byte) error {
@@ -106,7 +125,7 @@ func (h *Handle) writeToStore() error {
 	}
 	err := store.PutObjectAtomic(h)
 	if err == datastore.ErrKeyModified {
-		return types.RetryErrorf("failed to perform atomic write (%v). retry might fix the error", err)
+		return types.RetryErrorf("failed to perform atomic write (%v). Retry might fix the error", err)
 	}
 	return err
 }

@@ -29,7 +29,19 @@ func (e CannotSetFieldError) Error() string {
 	return fmt.Sprintf("cannot set field %q of type %q", e.Field, e.Type)
 }
 
-// Generic is an basic type to store arbitrary settings.
+// TypeMismatchError is the error returned when the type of the generic value
+// for a field mismatches the type of the destination structure.
+type TypeMismatchError struct {
+	Field      string
+	ExpectType string
+	ActualType string
+}
+
+func (e TypeMismatchError) Error() string {
+	return fmt.Sprintf("type mismatch, field %s require type %v, actual type %v", e.Field, e.ExpectType, e.ActualType)
+}
+
+// Generic is a basic type to store arbitrary settings.
 type Generic map[string]interface{}
 
 // NewGeneric returns a new Generic instance.
@@ -61,6 +73,9 @@ func GenerateFromModel(options Generic, model interface{}) (interface{}, error) 
 		}
 		if !field.CanSet() {
 			return nil, CannotSetFieldError{name, resType.String()}
+		}
+		if reflect.TypeOf(value) != field.Type() {
+			return nil, TypeMismatchError{name, field.Type().String(), reflect.TypeOf(value).String()}
 		}
 		field.Set(reflect.ValueOf(value))
 	}

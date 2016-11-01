@@ -1,7 +1,7 @@
-// +build !linux,!darwin,!freebsd
+// +build !linux,!darwin,!freebsd,!windows,!solaris
 
 package daemon
 
-func setupSigusr1Trap() {
+func setupDumpStackTrap(_ string) {
 	return
 }

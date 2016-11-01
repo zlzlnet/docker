@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// MimeTypes stores the MIME content type.
 var MimeTypes = struct {
 	TextPlain   string
 	Tar         string
@@ -16,8 +17,7 @@ var MimeTypes = struct {
 // http.DetectContentType is guaranteed not be nil, defaulting to
 // application/octet-stream when a better guess cannot be made. The
 // result of this detection is then run through mime.ParseMediaType()
-// which separates it from any parameters.
-// Note that calling this function does not advance the Reader at r
+// which separates the actual MIME string from any parameters.
 func DetectContentType(c []byte) (string, map[string]string, error) {
 
 	ct := http.DetectContentType(c)

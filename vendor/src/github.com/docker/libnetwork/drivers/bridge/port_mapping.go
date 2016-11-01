@@ -14,8 +14,8 @@ var (
 	defaultBindingIP = net.IPv4(0, 0, 0, 0)
 )
 
-func (n *bridgeNetwork) allocatePorts(epConfig *endpointConfiguration, ep *bridgeEndpoint, reqDefBindIP net.IP, ulPxyEnabled bool) ([]types.PortBinding, error) {
-	if epConfig == nil || epConfig.PortBindings == nil {
+func (n *bridgeNetwork) allocatePorts(ep *bridgeEndpoint, reqDefBindIP net.IP, ulPxyEnabled bool) ([]types.PortBinding, error) {
+	if ep.extConnConfig == nil || ep.extConnConfig.PortBindings == nil {
 		return nil, nil
 	}
 
@@ -24,7 +24,7 @@ func (n *bridgeNetwork) allocatePorts(epConfig *endpointConfiguration, ep *bridg
 		defHostIP = reqDefBindIP
 	}
 
-	return n.allocatePortsInternal(epConfig.PortBindings, ep.addr.IP, defHostIP, ulPxyEnabled)
+	return n.allocatePortsInternal(ep.extConnConfig.PortBindings, ep.addr.IP, defHostIP, ulPxyEnabled)
 }
 
 func (n *bridgeNetwork) allocatePortsInternal(bindings []types.PortBinding, containerIP, defHostIP net.IP, ulPxyEnabled bool) ([]types.PortBinding, error) {
@@ -57,6 +57,11 @@ func (n *bridgeNetwork) allocatePort(bnd *types.PortBinding, containerIP, defHos
 		bnd.HostIP = defHostIP
 	}
 
+	// Adjust HostPortEnd if this is not a range.
+	if bnd.HostPortEnd == 0 {
+		bnd.HostPortEnd = bnd.HostPort
+	}
+
 	// Construct the container side transport address
 	container, err := bnd.ContainerAddr()
 	if err != nil {
@@ -65,12 +70,12 @@ func (n *bridgeNetwork) allocatePort(bnd *types.PortBinding, containerIP, defHos
 
 	// Try up to maxAllocatePortAttempts times to get a port that's not already allocated.
 	for i := 0; i < maxAllocatePortAttempts; i++ {
-		if host, err = n.portMapper.Map(container, bnd.HostIP, int(bnd.HostPort), ulPxyEnabled); err == nil {
+		if host, err = n.portMapper.MapRange(container, bnd.HostIP, int(bnd.HostPort), int(bnd.HostPortEnd), ulPxyEnabled); err == nil {
 			break
 		}
 		// There is no point in immediately retrying to map an explicitly chosen port.
 		if bnd.HostPort != 0 {
-			logrus.Warnf("Failed to allocate and map port %d: %s", bnd.HostPort, err)
+			logrus.Warnf("Failed to allocate and map port %d-%d: %s", bnd.HostPort, bnd.HostPortEnd, err)
 			break
 		}
 		logrus.Warnf("Failed to allocate and map port: %s, retry: %d", err, i+1)

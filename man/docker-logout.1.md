@@ -2,7 +2,7 @@
 % Docker Community
 % JUNE 2014
 # NAME
-docker-logout - Log out from a Docker Registry.
+docker-logout - Log out from a Docker registry.
 
 # SYNOPSIS
 **docker logout**
@@ -24,7 +24,7 @@ There are no available options.
     # docker logout localhost:8080
 
 # See also
-**docker-login(1)** to register or log in to a Docker registry server.
+**docker-login(1)** to log in to a Docker registry server.
 
 # HISTORY
 June 2014, Originally compiled by Daniel, Dao Quang Minh (daniel at nitrous dot io)

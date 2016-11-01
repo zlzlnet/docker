@@ -2,36 +2,58 @@
 % Docker Community
 % JUNE 2014
 # NAME
-docker-inspect - Return low-level information on a container or image
+docker-inspect - Return low-level information on docker objects
 
 # SYNOPSIS
 **docker inspect**
 [**--help**]
 [**-f**|**--format**[=*FORMAT*]]
-CONTAINER|IMAGE [CONTAINER|IMAGE...]
+[**-s**|**--size**]
+[**--type**=*container*|*image*|*network*|*node*|*service*|*task*|*volume*]
+NAME|ID [NAME|ID...]
 
 # DESCRIPTION
 
-This displays all the information available in Docker for a given
-container or image. By default, this will render all results in a JSON
-array. If a format is specified, the given template will be executed for
-each result.
+This displays the low-level information on Docker object(s) (e.g. container, 
+image, volume,network, node, service, or task) identified by name or ID. By default,
+this will render all results in a JSON array. If the container and image have
+the same name, this will return container JSON for unspecified type. If a format
+is specified, the given template will be executed for each result.
 
 # OPTIONS
 **--help**
     Print usage statement
 
 **-f**, **--format**=""
-    Format the output using the given go template.
+    Format the output using the given Go template
+
+**-s**, **--size**
+    Display total file sizes if the type is container
+
+**--type**=*container*|*image*|*network*|*node*|*service*|*task*|*volume*
+    Return JSON for specified type, permissible values are "image", "container",
+    "network", "node", "service", "task", and "volume"
 
 # EXAMPLES
+
+Get information about an image when image name conflicts with the container name,
+e.g. both image and container are named rhel7:
+
+    $ docker inspect --type=image rhel7
+    [
+    {
+     "Id": "fe01a428b9d9de35d29531e9994157978e8c48fa693e1bf1d221dffbbb67b170",
+     "Parent": "10acc31def5d6f249b548e01e8ffbaccfd61af0240c17315a7ad393d022c5ca2",
+     ....
+    }
+    ]
 
 ## Getting information on a container
 
 To get information on a container use its ID or instance name:
 
     $ docker inspect d2cc496561d6
-[{
+    [{
     "Id": "d2cc496561d6d520cbc0236b4ba88c362c446a7619992123f11c809cded25b47",
     "Created": "2015-06-08T16:18:02.505155285Z",
     "Path": "bash",
@@ -51,23 +73,36 @@ To get information on a container use its ID or instance name:
     "Image": "ded7cd95e059788f2586a51c275a4f151653779d6a7f4dad77c2bd34601d94e4",
     "NetworkSettings": {
         "Bridge": "",
-        "EndpointID": "",
-        "Gateway": "",
-        "GlobalIPv6Address": "",
-        "GlobalIPv6PrefixLen": 0,
+        "SandboxID": "6b4851d1903e16dd6a567bd526553a86664361f31036eaaa2f8454d6f4611f6f",
         "HairpinMode": false,
-        "IPAddress": "",
-        "IPPrefixLen": 0,
-        "IPv6Gateway": "",
         "LinkLocalIPv6Address": "",
         "LinkLocalIPv6PrefixLen": 0,
-        "MacAddress": "",
-        "NetworkID": "",
-        "PortMapping": null,
-        "Ports": null,
-        "SandboxKey": "",
+        "Ports": {},
+        "SandboxKey": "/var/run/docker/netns/6b4851d1903e",
         "SecondaryIPAddresses": null,
-        "SecondaryIPv6Addresses": null
+        "SecondaryIPv6Addresses": null,
+        "EndpointID": "7587b82f0dada3656fda26588aee72630c6fab1536d36e394b2bfbcf898c971d",
+        "Gateway": "172.17.0.1",
+        "GlobalIPv6Address": "",
+        "GlobalIPv6PrefixLen": 0,
+        "IPAddress": "172.17.0.2",
+        "IPPrefixLen": 16,
+        "IPv6Gateway": "",
+        "MacAddress": "02:42:ac:12:00:02",
+        "Networks": {
+            "bridge": {
+                "NetworkID": "7ea29fc1412292a2d7bba362f9253545fecdfa8ce9a6e37dd10ba8bee7129812",
+                "EndpointID": "7587b82f0dada3656fda26588aee72630c6fab1536d36e394b2bfbcf898c971d",
+                "Gateway": "172.17.0.1",
+                "IPAddress": "172.17.0.2",
+                "IPPrefixLen": 16,
+                "IPv6Gateway": "",
+                "GlobalIPv6Address": "",
+                "GlobalIPv6PrefixLen": 0,
+                "MacAddress": "02:42:ac:12:00:02"
+            }
+        }
+
     },
     "ResolvConfPath": "/var/lib/docker/containers/d2cc496561d6d520cbc0236b4ba88c362c446a7619992123f11c809cded25b47/resolv.conf",
     "HostnamePath": "/var/lib/docker/containers/d2cc496561d6d520cbc0236b4ba88c362c446a7619992123f11c809cded25b47/hostname",
@@ -76,17 +111,22 @@ To get information on a container use its ID or instance name:
     "Name": "/adoring_wozniak",
     "RestartCount": 0,
     "Driver": "devicemapper",
-    "ExecDriver": "native-0.2",
     "MountLabel": "",
     "ProcessLabel": "",
-    "Volumes": {},
-    "VolumesRW": {},
+    "Mounts": [
+      {
+        "Source": "/data",
+        "Destination": "/data",
+        "Mode": "ro,Z",
+        "RW": false
+	"Propagation": ""
+      }
+    ],
     "AppArmorProfile": "",
     "ExecIDs": null,
     "HostConfig": {
         "Binds": null,
         "ContainerIDFile": "",
-        "LxcConf": [],
         "Memory": 0,
         "MemorySwap": 0,
         "CpuShares": 0,
@@ -102,6 +142,7 @@ To get information on a container use its ID or instance name:
         "PublishAllPorts": false,
         "Dns": null,
         "DnsSearch": null,
+        "DnsOptions": null,
         "ExtraHosts": null,
         "VolumesFrom": null,
         "Devices": [],
@@ -159,15 +200,16 @@ To get information on a container use its ID or instance name:
         "Memory": 0,
         "MemorySwap": 0,
         "CpuShares": 0,
-        "Cpuset": ""
+        "Cpuset": "",
+        "StopSignal": "SIGTERM"
     }
-}
-]
+    }
+    ]
 ## Getting the IP address of a container instance
 
 To get the IP address of a container use:
 
-    $ docker inspect --format='{{.NetworkSettings.IPAddress}}' d2cc496561d6
+    $ docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' d2cc496561d6
     172.17.0.2
 
 ## Listing all port bindings
@@ -179,16 +221,28 @@ output:
       {{$p}} -> {{(index $conf 0).HostPort}} {{end}}' d2cc496561d6
       80/tcp -> 80
 
-You can get more information about how to write a go template from:
-http://golang.org/pkg/text/template/.
+You can get more information about how to write a Go template from:
+https://golang.org/pkg/text/template/.
+
+## Getting size information on a container
+
+    $ docker inspect -s d2cc496561d6
+    [
+    {
+    ....
+    "SizeRw": 0,
+    "SizeRootFs": 972,
+    ....
+    }
+    ]
 
 ## Getting information on an image
 
 Use an image's ID or name (e.g., repository/name[:tag]) to get information
-on it.
+about the image:
 
     $ docker inspect ded7cd95e059
-[{
+    [{
     "Id": "ded7cd95e059788f2586a51c275a4f151653779d6a7f4dad77c2bd34601d94e4",
     "Parent": "48ecf305d2cf7046c1f5f8fcbcd4994403173441d4a7f125b1bb0ceead9de731",
     "Comment": "",
@@ -258,11 +312,12 @@ on it.
             "DeviceSize": "171798691840"
         }
     }
-}
-]
+    }
+    ]
 
 # HISTORY
 April 2014, originally compiled by William Henry (whenry at redhat dot com)
 based on docker.com source material and internal work.
 June 2014, updated by Sven Dowideit <SvenDowideit@home.org.au>
 April 2015, updated by Qiang Huang <h.huangqiang@huawei.com>
+October 2015, updated by Sally O'Malley <somalley@redhat.com>

@@ -35,7 +35,7 @@ func (einc *ErrInvalidNetworkConfig) Error() string {
 // Forbidden denotes the type of this error
 func (einc *ErrInvalidNetworkConfig) Forbidden() {}
 
-// ErrInvalidContainerConfig error is returned when a endpoint create is attempted with an invalid configuration.
+// ErrInvalidContainerConfig error is returned when an endpoint create is attempted with an invalid configuration.
 type ErrInvalidContainerConfig struct{}
 
 func (eicc *ErrInvalidContainerConfig) Error() string {
@@ -45,7 +45,7 @@ func (eicc *ErrInvalidContainerConfig) Error() string {
 // BadRequest denotes the type of this error
 func (eicc *ErrInvalidContainerConfig) BadRequest() {}
 
-// ErrInvalidEndpointConfig error is returned when a endpoint create is attempted with an invalid endpoint configuration.
+// ErrInvalidEndpointConfig error is returned when an endpoint create is attempted with an invalid endpoint configuration.
 type ErrInvalidEndpointConfig struct{}
 
 func (eiec *ErrInvalidEndpointConfig) Error() string {
@@ -115,17 +115,6 @@ func (eim ErrInvalidMtu) Error() string {
 // BadRequest denotes the type of this error
 func (eim ErrInvalidMtu) BadRequest() {}
 
-// ErrIPFwdCfg is returned when ip forwarding setup is invoked when the configuration
-// not enabled.
-type ErrIPFwdCfg struct{}
-
-func (eipf *ErrIPFwdCfg) Error() string {
-	return "unexpected request to enable IP Forwarding"
-}
-
-// BadRequest denotes the type of this error
-func (eipf *ErrIPFwdCfg) BadRequest() {}
-
 // ErrInvalidPort is returned when the container or host port specified in the port binding is not valid.
 type ErrInvalidPort string
 
@@ -194,7 +183,7 @@ func (ieie InvalidEndpointIDError) BadRequest() {}
 type InvalidSandboxIDError string
 
 func (isie InvalidSandboxIDError) Error() string {
-	return fmt.Sprintf("invalid sanbox id: %s", string(isie))
+	return fmt.Sprintf("invalid sandbox id: %s", string(isie))
 }
 
 // BadRequest denotes the type of this error
@@ -221,6 +210,17 @@ func (ndbee NonDefaultBridgeExistError) Error() string {
 
 // Forbidden denotes the type of this error
 func (ndbee NonDefaultBridgeExistError) Forbidden() {}
+
+// NonDefaultBridgeNeedsIPError is returned when a non-default
+// bridge config is passed but it has no ip configured
+type NonDefaultBridgeNeedsIPError string
+
+func (ndbee NonDefaultBridgeNeedsIPError) Error() string {
+	return fmt.Sprintf("bridge device with non default name %s must have a valid IP address", string(ndbee))
+}
+
+// Forbidden denotes the type of this error
+func (ndbee NonDefaultBridgeNeedsIPError) Forbidden() {}
 
 // FixedCIDRv4Error is returned when fixed-cidrv4 configuration
 // failed.
